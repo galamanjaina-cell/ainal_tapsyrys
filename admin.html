@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>АЙНАЛ — басқару</title>
+<style>
+:root { --bg:#0d0d0d; --panel:#161616; --line:#262626; --text:#f2f2f2; --muted:#8a8a8a; --accent:#ff5a1f; --danger:#e5484d; color-scheme:dark; }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--text); font-family:Arial, sans-serif; padding:20px; }
+h1 { font-size:20px; letter-spacing:2px; margin:0 0 16px; }
+h2 { font-size:16px; margin:28px 0 12px; letter-spacing:1px; }
+.box { background:var(--panel); border:1px solid var(--line); padding:16px; margin-bottom:16px; }
+label { display:block; font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin:12px 0 4px; }
+input, select { width:100%; background:var(--bg); border:1px solid var(--line); color:var(--text); padding:10px; font-size:14px; }
+input[type=checkbox] { width:auto; }
+button { background:none; border:1px solid var(--line); color:var(--text); padding:8px 12px; font-size:12px; cursor:pointer; margin:4px 4px 4px 0; }
+button:hover { border-color:var(--accent); color:var(--accent); }
+button.primary { background:var(--accent); border-color:var(--accent); color:#000; font-weight:700; }
+button.danger:hover { border-color:var(--danger); color:var(--danger); }
+.row { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--line); flex-wrap:wrap; }
+.muted { color:var(--muted); font-size:13px; }
+.msg { font-size:13px; margin-top:10px; min-height:18px; color:var(--muted); }
+.msg.err { color:var(--danger); }
+.hidden { display:none; }
+</style>
+</head>
+<body>
+
+<h1>АЙНАЛ — басқару</h1>
+
+<div id="loginBox" class="box hidden">
+  <label>Email</label>
+  <input id="email" type="email" autocomplete="username">
+  <label>Құпия сөз</label>
+  <input id="password" type="password" autocomplete="current-password">
+  <div style="margin-top:14px"><button class="primary" id="loginBtn">Кіру</button></div>
+  <div class="msg" id="loginMsg"></div>
+</div>
+
+<div id="panel" class="hidden">
+  <div class="row">
+    <span class="muted" id="who"></span>
+    <button id="logoutBtn">Шығу</button>
+  </div>
+
+  <h2>ТАУАРЛАР</h2>
+  <div class="box">
+    <input type="hidden" id="editId">
+    <label>Атауы</label>
+    <input id="fName">
+    <label>Бағасы (₸)</label>
+    <input id="fPrice" type="number" min="0">
+    <label>Өлшемдер (үтірмен)</label>
+    <input id="fSizes" placeholder="S, M, L, XL">
+    <label>Түсі (HEX)</label>
+    <input id="fColor" placeholder="#555555">
+    <label>Сурет немесе видео файлы (jpg, png, webp, mp4, webm)</label>
+    <input id="fFile" type="file" accept="image/*,video/mp4,video/webm">
+    <label>Немесе сілтеме (URL)</label>
+    <input id="fUrl" placeholder="https://...">
+    <label><input type="checkbox" id="fActive" checked> Сайтта көрсету</label>
+    <div style="margin-top:12px">
+      <button class="primary" id="saveBtn">Сақтау</button>
+      <button id="resetBtn">Жаңа тауар</button>
+    </div>
+    <div class="msg" id="prodMsg"></div>
+  </div>
+  <div id="productList"></div>
+
+  <h2>ТАПСЫРЫСТАР</h2>
+  <div id="orderList"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.js"></script>
+<script>
+const SUPABASE_URL = "https://qxyrgrxzxwkdaxfvwuuk.supabase.co";
+const SUPABASE_KEY = "sb_publishable_BzK_WKib3Y2eZrNlykC_KA_DVXyEXQU";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const STATUSES = { new: "Жаңа", accepted: "Қабылданды", shipped: "Жіберілді", delivered: "Жеткізілді", cancelled: "Бас тартылды" };
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const fmt = n => Number(n || 0).toLocaleString("kk-KZ") + " ₸";
+
+function setMsg(el, text, err) {
+  el.textContent = text;
+  el.className = "msg" + (err ? " err" : "");
+}
+
+async function showPanel(session) {
+  if (!session) {
+    $("loginBox").classList.remove("hidden");
+    $("panel").classList.add("hidden");
+    return;
+  }
+  $("loginBox").classList.add("hidden");
+  $("panel").classList.remove("hidden");
+  $("who").textContent = session.user.email;
+  await loadProducts();
+  await loadOrders();
+}
+
+$("loginBtn").onclick = async () => {
+  const { error } = await sb.auth.signInWithPassword({
+    email: $("email").value.trim(),
+    password: $("password").value
+  });
+  if (error) return setMsg($("loginMsg"), "Кіру мүмкін болмады: " + error.message, true);
+  setMsg($("loginMsg"), "");
+  const { data } = await sb.auth.getSession();
+  showPanel(data.session);
+};
+
+$("logoutBtn").onclick = async () => {
+  await sb.auth.signOut();
+  showPanel(null);
+};
+
+/* ---------- Тауарлар ---------- */
+
+async function loadProducts() {
+  const { data, error } = await sb.from("products").select("*").order("created_at", { ascending: true });
+  if (error) return setMsg($("prodMsg"), "Тауарларды жүктеу қатесі: " + error.message, true);
+  const box = $("productList");
+  box.innerHTML = "";
+  (data || []).forEach(p => {
+    const row = document.createElement("div");
+    row.className = "row";
+    const info = document.createElement("div");
+    info.innerHTML = "<strong>" + esc(p.name) + "</strong><div class=\"muted\">" +
+      fmt(p.price) + " · " + esc((p.sizes || []).join(", ")) + " · " +
+      (p.is_active ? "көрсетілуде" : "жасырулы") + "</div>";
+    const actions = document.createElement("div");
+    const edit = document.createElement("button");
+    edit.textContent = "Өзгерту";
+    edit.onclick = () => fillForm(p);
+    const del = document.createElement("button");
+    del.className = "danger";
+    del.textContent = "Жою";
+    del.onclick = () => removeProduct(p);
+    actions.append(edit, del);
+    row.append(info, actions);
+    box.appendChild(row);
+  });
+}
+
+function fillForm(p) {
+  $("editId").value = p.id;
+  $("fName").value = p.name || "";
+  $("fPrice").value = p.price || "";
+  $("fSizes").value = (p.sizes || []).join(", ");
+  $("fColor").value = p.color || "";
+  $("fUrl").value = p.image_url || "";
+  $("fActive").checked = !!p.is_active;
+  $("fFile").value = "";
+  setMsg($("prodMsg"), "Өзгерту режимі: " + p.name);
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function resetForm() {
+  ["editId", "fName", "fPrice", "fSizes", "fColor", "fUrl", "fFile"].forEach(id => $(id).value = "");
+  $("fActive").checked = true;
+  setMsg($("prodMsg"), "");
+}
+$("resetBtn").onclick = resetForm;
+
+async function uploadFile(file) {
+  const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const path = Date.now() + "-" + safe;
+  const { error } = await sb.storage.from("products").upload(path, file, {
+    contentType: file.type,
+    upsert: false
+  });
+  if (error) throw error;
+  return sb.storage.from("products").getPublicUrl(path).data.publicUrl;
+}
+
+$("saveBtn").onclick = async () => {
+  const name = $("fName").value.trim();
+  const price = Number($("fPrice").value);
+  if (!name) return setMsg($("prodMsg"), "Атауын жазыңыз", true);
+  if (!(price >= 0)) return setMsg($("prodMsg"), "Бағасын дұрыс жазыңыз", true);
+
+  setMsg($("prodMsg"), "Сақталуда...");
+  let imageUrl = $("fUrl").value.trim();
+  const file = $("fFile").files[0];
+  if (file) {
+    try {
+      imageUrl = await uploadFile(file);
+    } catch (e) {
+      return setMsg($("prodMsg"), "Файлды жүктеу мүмкін болмады: " + e.message, true);
+    }
+  }
+
+  const row = {
+    name: name,
+    price: price,
+    sizes: $("fSizes").value.split(",").map(s => s.trim()).filter(Boolean),
+    color: $("fColor").value.trim() || "#555555",
+    image_url: imageUrl || null,
+    is_active: $("fActive").checked
+  };
+  const id = $("editId").value;
+  const res = id
+    ? await sb.from("products").update(row).eq("id", id)
+    : await sb.from("products").insert(row);
+  if (res.error) return setMsg($("prodMsg"), "Сақтау мүмкін болмады: " + res.error.message, true);
+
+  resetForm();
+  setMsg($("prodMsg"), "Сақталды");
+  loadProducts();
+};
+
+async function removeProduct(p) {
+  if (!confirm("«" + p.name + "» тауарын жою керек пе?")) return;
+  const { error } = await sb.from("products").delete().eq("id", p.id);
+  if (error) return setMsg($("prodMsg"), "Жою мүмкін болмады: " + error.message, true);
+  if ($("editId").value === p.id) resetForm();
+  loadProducts();
+}
+
+/* ---------- Тапсырыстар ---------- */
+
+async function loadOrders() {
+  const box = $("orderList");
+  const { data, error } = await sb.from("orders").select("*").order("created_at", { ascending: false }).limit(100);
+  if (error) {
+    box.textContent = "Тапсырыстарды жүктеу қатесі: " + error.message;
+    return;
+  }
+  if (!data || !data.length) {
+    box.innerHTML = "<div class=\"muted\">Тапсырыс жоқ</div>";
+    return;
+  }
+  box.innerHTML = data.map(o => {
+    const items = (o.items || []).map(i => esc(i.name) + " (" + esc(i.size) + ")").join(", ");
+    const opts = Object.keys(STATUSES).map(k =>
+      "<option value=\"" + k + "\"" + (o.status === k ? " selected" : "") + ">" + STATUSES[k] + "</option>"
+    ).join("");
+    return "<div class=\"box\">" +
+      "<div><strong>" + esc(o.customer_name) + "</strong> · " + esc(o.phone) + "</div>" +
+      "<div class=\"muted\">" + esc(o.address) + "</div>" +
+      "<div style=\"margin:6px 0\">" + items + "</div>" +
+      "<div>" + fmt(o.total) + " · <span class=\"muted\">" + new Date(o.created_at).toLocaleString("kk-KZ") + "</span></div>" +
+      "<select class=\"statusSel\" data-id=\"" + o.id + "\" style=\"margin-top:8px\">" + opts + "</select>" +
+      "</div>";
+  }).join("");
+
+  document.querySelectorAll(".statusSel").forEach(sel => {
+    sel.onchange = async () => {
+      const { error } = await sb.from("orders").update({ status: sel.value }).eq("id", sel.dataset.id);
+      if (error) alert("Күйін өзгерту мүмкін болмады: " + error.message);
+    };
+  });
+}
+
+/* ---------- Бастау ---------- */
+sb.auth.getSession().then(({ data }) => showPanel(data.session));
+</script>
+</body>
+</html>

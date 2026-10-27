@@ -202,7 +202,11 @@ input:focus { outline: none; border-color: var(--accent); }
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.js"></script>
 <script>
+const SUPABASE_URL = "https://qxyrgrxzxwkdaxfvwuuk.supabase.co";
+const SUPABASE_KEY = "sb_publishable_BzK_WKib3Y2eZrNlykC_KA_DVXyEXQU";
+const sb = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 const FALLBACK_SIZES = ["S", "M", "L", "XL"];
 let products = [];          // [{id, name, price, sizes, color, image}]
 let index = 0;
@@ -446,6 +450,7 @@ async function init() {
   if (canWrite) $("openAdmin").hidden = false;
 
   if (!db) {
+    if (await loadProducts()) { render(); return; }
     products = [
       { id: "puffer-vest", name: "Қысқы жеңсіз күртеше", price: 18900, sizes: ["S","M","L","XL"], color: "#ff5a1f", image: "" },
       { id: "waffle-long-sleeve", name: "Вафельді ұзын жеңді футболка", price: 12500, sizes: ["S","M","L","XL"], color: "#d9d4c7", image: "" },
@@ -469,6 +474,39 @@ async function init() {
 }
 
 // Тапсырыс функциялары
+async function loadProducts() {
+  if (!sb) return false;
+  const { data, error } = await sb.from("products").select("*").eq("is_active", true).order("created_at", { ascending: true });
+  if (error || !data) return false;
+  products = data.map(p => ({
+    id: p.id,
+    name: p.name,
+    price: p.price,
+    sizes: p.sizes || [],
+    color: p.color || "#555555",
+    image: p.image_url || "",
+    media: /\.(mp4|webm)(\?|$)/i.test(p.image_url || "") ? "video" : "image"
+  }));
+  return true;
+}
+
+async function saveOrderToDb() {
+  if (!sb) return;
+  try {
+    const items = cart.map(c => ({ name: c.name, size: c.size, price: c.price }));
+    const total = items.reduce((sum, i) => sum + i.price, 0);
+    await sb.from("orders").insert({
+      customer_name: $("oName").value.trim(),
+      phone: $("oPhone").value.trim(),
+      address: $("oAddr").value.trim(),
+      items: items,
+      total: total
+    });
+  } catch (e) {
+    console.warn("Тапсырысты дерекқорға сақтау мүмкін болмады", e);
+  }
+}
+
 function openOrder() {
   if (!cart.length) { setStatus("Себет бос", true); return; }
   renderCart();
@@ -522,6 +560,7 @@ async function sendOrder() {
   if (!text) return orderStatus("Аты, телефоны және мекенжайы толтырыңыз", true);
   orderStatus("Жіберілуде...");
   try {
+    await saveOrderToDb();
     const res = await fetch("/.netlify/functions/order", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
