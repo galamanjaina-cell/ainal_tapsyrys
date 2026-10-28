@@ -49,6 +49,13 @@ button.danger:hover { border-color:var(--danger); color:var(--danger); }
     <input type="hidden" id="editId">
     <label>Атауы</label>
     <input id="fName">
+    <label>Санат</label>
+    <select id="fCat" style="width:100%;background:#f6f6f6;border:1px solid transparent;padding:11px 12px;font-size:14px;border-radius:10px">
+      <option value="unisex">Барлығына</option>
+      <option value="men">Ерлер</option>
+      <option value="women">Әйелдер</option>
+      <option value="kids">Балалар</option>
+    </select>
     <label>Бағасы (₸)</label>
     <input id="fPrice" type="number" min="0">
     <label>Өлшемдер (үтірмен)</label>
@@ -148,6 +155,7 @@ async function loadProducts() {
 function fillForm(p) {
   $("editId").value = p.id;
   $("fName").value = p.name || "";
+  $("fCat").value = p.category || "unisex";
   $("fPrice").value = p.price || "";
   $("fSizes").value = (p.sizes || []).join(", ");
   $("fColor").value = p.color || "";
@@ -161,6 +169,7 @@ function fillForm(p) {
 function resetForm() {
   ["editId", "fName", "fPrice", "fSizes", "fColor", "fUrl", "fFile"].forEach(id => $(id).value = "");
   $("fActive").checked = true;
+  $("fCat").value = "unisex";
   setMsg($("prodMsg"), "");
 }
 $("resetBtn").onclick = resetForm;
@@ -198,6 +207,7 @@ $("saveBtn").onclick = async () => {
     price: price,
     sizes: $("fSizes").value.split(",").map(s => s.trim()).filter(Boolean),
     color: $("fColor").value.trim() || "#555555",
+    category: $("fCat").value,
     image_url: imageUrl || null,
     is_active: $("fActive").checked
   };
