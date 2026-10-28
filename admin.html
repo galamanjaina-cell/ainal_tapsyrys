@@ -29,7 +29,7 @@ button.danger:hover { border-color:var(--danger); color:var(--danger); }
 
 <h1>ainal — басқару</h1>
 
-<div id="loginBox" class="box hidden">
+<div id="loginBox" class="box">
   <label>Email</label>
   <input id="email" type="email" autocomplete="username">
   <label>Құпия сөз</label>
@@ -82,6 +82,10 @@ button.danger:hover { border-color:var(--danger); color:var(--danger); }
 <script>
 const SUPABASE_URL = "https://qxyrgrxzxwkdaxfvwuuk.supabase.co";
 const SUPABASE_KEY = "sb_publishable_BzK_WKib3Y2eZrNlykC_KA_DVXyEXQU";
+if (typeof supabase === "undefined") {
+  document.body.insertAdjacentHTML("beforeend", '<p style="color:#e5484d;padding:20px">Supabase кітапханасы жүктелмеді. Бетті Ctrl+Shift+R арқылы жаңартыңыз немесе интернетті тексеріңіз.</p>');
+  throw new Error("supabase library not loaded");
+}
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const STATUSES = { new: "Жаңа", accepted: "Қабылданды", shipped: "Жіберілді", delivered: "Жеткізілді", cancelled: "Бас тартылды" };
