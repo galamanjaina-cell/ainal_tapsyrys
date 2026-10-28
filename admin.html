@@ -49,6 +49,8 @@ button.danger:hover { border-color:var(--danger); color:var(--danger); }
     <input type="hidden" id="editId">
     <label>Атауы</label>
     <input id="fName">
+    <label>Қысқаша сипаттама</label>
+    <textarea id="fDesc" rows="3" style="width:100%;background:#f6f6f6;border:1px solid transparent;padding:11px 12px;font-size:14px;border-radius:10px"></textarea>
     <label>Санат</label>
     <select id="fCat" style="width:100%;background:#f6f6f6;border:1px solid transparent;padding:11px 12px;font-size:14px;border-radius:10px">
       <option value="unisex">Басқа</option>
@@ -61,8 +63,8 @@ button.danger:hover { border-color:var(--danger); color:var(--danger); }
     <input id="fSizes" placeholder="Керек болмаса бос қалдырыңыз">
     <label>Түсі (HEX)</label>
     <input id="fColor" placeholder="#555555">
-    <label>Сурет немесе видео файлы (jpg, png, webp, mp4, webm)</label>
-    <input id="fFile" type="file" accept="image/*,video/mp4,video/webm">
+    <label>Суреттер (3-ке дейін, jpg, png, webp, mp4, webm)</label>
+    <input id="fFile" type="file" multiple accept="image/*,video/mp4,video/webm">
     <label>Немесе сілтеме (URL)</label>
     <input id="fUrl" placeholder="https://...">
     <label><input type="checkbox" id="fActive" checked> Сайтта көрсету</label>
@@ -88,6 +90,7 @@ if (typeof supabase === "undefined") {
 }
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+let editImages = [];
 const STATUSES = { new: "Жаңа", accepted: "Қабылданды", shipped: "Жіберілді", delivered: "Жеткізілді", cancelled: "Бас тартылды" };
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -158,6 +161,8 @@ async function loadProducts() {
 function fillForm(p) {
   $("editId").value = p.id;
   $("fName").value = p.name || "";
+  $("fDesc").value = p.description || "";
+  editImages = p.images && p.images.length ? p.images.slice() : (p.image_url ? [p.image_url] : []);
   $("fCat").value = p.category || "unisex";
   $("fPrice").value = p.price || "";
   $("fSizes").value = (p.sizes || []).join(", ");
@@ -173,6 +178,8 @@ function resetForm() {
   ["editId", "fName", "fPrice", "fSizes", "fColor", "fUrl", "fFile"].forEach(id => $(id).value = "");
   $("fActive").checked = true;
   $("fCat").value = "unisex";
+  $("fDesc").value = "";
+  editImages = [];
   setMsg($("prodMsg"), "");
 }
 $("resetBtn").onclick = resetForm;
@@ -196,14 +203,20 @@ $("saveBtn").onclick = async () => {
 
   setMsg($("prodMsg"), "Сақталуда...");
   let imageUrl = $("fUrl").value.trim();
-  const file = $("fFile").files[0];
-  if (file) {
+  let images = [];
+  const files = Array.from($("fFile").files || []).slice(0, 3);
+  if (files.length) {
     try {
-      imageUrl = await uploadFile(file);
+      for (const f of files) images.push(await uploadFile(f));
     } catch (e) {
       return setMsg($("prodMsg"), "Файлды жүктеу мүмкін болмады: " + e.message, true);
     }
+  } else if (imageUrl) {
+    images = [imageUrl];
+  } else {
+    images = editImages.slice();
   }
+  imageUrl = images[0] || null;
 
   const row = {
     name: name,
@@ -212,6 +225,8 @@ $("saveBtn").onclick = async () => {
     color: $("fColor").value.trim() || "#555555",
     category: $("fCat").value,
     image_url: imageUrl || null,
+    images: images,
+    description: $("fDesc").value.trim() || null,
     is_active: $("fActive").checked
   };
   const id = $("editId").value;

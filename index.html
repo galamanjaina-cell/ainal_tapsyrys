@@ -148,6 +148,11 @@ main { padding: 0 0 16px; }
 .contacts a { color: var(--ink); font-weight: 700; text-decoration: none; }
 .foot { text-align: center; color: var(--muted); font-size: 12px; margin-top: 18px; }
 .logo img { height: 36px; width: auto; display: block; }
+.pthumbs { display: flex; gap: 8px; margin-top: 10px; overflow-x: auto; }
+.pth { width: 64px; height: 64px; flex: 0 0 auto; border-radius: 10px; border: 2px solid transparent; background: #f1f2f4; padding: 0; overflow: hidden; cursor: pointer; }
+.pth.on { border-color: var(--ink); }
+.pth img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pdesc { margin-top: 12px; font-size: 14px; line-height: 1.6; white-space: pre-line; }
 </style>
 </head>
 <body>
@@ -187,10 +192,13 @@ main { padding: 0 0 16px; }
   <div class="sheet">
     <div class="sheet-head"><span></span><button class="x" data-close="productModal">✕</button></div>
     <div class="pmedia" id="pmedia"></div>
+    <div class="pthumbs" id="pthumbs" hidden></div>
     <div class="pname" id="pname"></div>
     <div class="pprice" id="pprice"></div>
+    <div class="pdesc" id="pdesc" hidden></div>
     <div class="chips" id="psizes"></div>
     <button class="btn-main" id="addBtn">Себетке қосу</button>
+    <button class="btn-ghost" id="shareBtn">Бөлісу</button>
   </div>
 </div>
 
@@ -305,8 +313,12 @@ async function loadProducts() {
   if (!sb) { toast("Дерекқор қолжетімсіз"); return; }
   const { data, error } = await sb.from("products").select("*").eq("is_active", true).order("created_at", { ascending: true });
   if (error) { toast("Тауарларды жүктеу қатесі"); return; }
-  products = (data || []).map(p => ({ ...p, sizes: p.sizes || [], category: p.category || "unisex" }));
+  products = (data || []).map(p => {
+    const imgs = (p.images && p.images.length) ? p.images : (p.image_url ? [p.image_url] : []);
+    return { ...p, sizes: p.sizes || [], category: p.category || "unisex", images: imgs, image_url: imgs[0] || null };
+  });
   render();
+  openFromHash();
 }
 
 function visible() {
@@ -375,11 +387,35 @@ function openProduct(id) {
   if (!p) return;
   openId = id;
   selSize = p.sizes.length ? p.sizes[0] : "";
-  $("pmedia").innerHTML = mediaHtml(p, "big");
+  showGallery(p, 0);
   $("pname").textContent = p.name;
   $("pprice").textContent = fmt(p.price);
+  $("pdesc").textContent = p.description || "";
+  $("pdesc").hidden = !p.description;
   renderPsizes();
   $("productModal").classList.add("open");
+}
+
+function showGallery(p, i) {
+  const imgs = p.images && p.images.length ? p.images : (p.image_url ? [p.image_url] : []);
+  const cur = imgs[i];
+  if (cur && !isVideo(cur)) {
+    $("pmedia").innerHTML = '<img class="big" src="' + esc(cur) + '" alt="' + esc(p.name) + '">';
+  } else if (cur) {
+    $("pmedia").innerHTML = '<video class="big" src="' + esc(cur) + '" controls playsinline></video>';
+  } else {
+    $("pmedia").innerHTML = mediaHtml(p, "big");
+  }
+  $("pthumbs").hidden = imgs.length < 2;
+  $("pthumbs").innerHTML = imgs.map((u, k) =>
+    '<button class="pth' + (k === i ? " on" : "") + '" data-th="' + k + '">' +
+    (isVideo(u) ? '<span style="font-size:22px">▶</span>' : '<img src="' + esc(u) + '" alt="">') + '</button>'
+  ).join("");
+}
+
+function openFromHash() {
+  const m = location.hash.match(/^#p=(.+)$/);
+  if (m && products.some(p => p.id === m[1])) openProduct(m[1]);
 }
 
 function renderPsizes() {
@@ -516,6 +552,33 @@ $("psizes").addEventListener("click", e => {
 });
 
 $("addBtn").onclick = addToCart;
+
+$("pthumbs").addEventListener("click", e => {
+  const b = e.target.closest("[data-th]");
+  if (!b) return;
+  const p = products.find(x => x.id === openId);
+  if (p) showGallery(p, Number(b.dataset.th));
+});
+
+$("shareBtn").onclick = async () => {
+  const p = products.find(x => x.id === openId);
+  if (!p) return;
+  const url = location.origin + location.pathname + "#p=" + p.id;
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: p.name, text: p.name + " — " + fmt(p.price) + " · ainal", url: url });
+      return;
+    } catch (e) {
+      if (e && e.name === "AbortError") return;
+    }
+  }
+  try {
+    await navigator.clipboard.writeText(url);
+    toast("Сілтеме көшірілді");
+  } catch (e) {
+    toast("Сілтеме: " + url);
+  }
+};
 
 $("cartItems").addEventListener("click", e => {
   const b = e.target.closest("[data-rm]");
