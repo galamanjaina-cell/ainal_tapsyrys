@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ainal — Сантехника және электротауар</title>
+<link rel="icon" href="logo.png">
+<style>
+:root { --bg:#f4f5f7; --card:#ffffff; --ink:#111111; --muted:#8a8f98; --line:#eceef2; --green:#1fa463; --red:#e5484d; color-scheme: light; }
+[hidden] { display: none !important; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg); color: var(--ink); font-family: "Helvetica Neue", Arial, sans-serif;
+  max-width: 520px; margin: 0 auto; min-height: 100vh; padding-bottom: 84px;
+}
+.top {
+  position: sticky; top: 0; z-index: 10; background: var(--bg);
+  padding: 14px 16px 10px; display: flex; flex-direction: column; gap: 10px;
+}
+.logo { font-weight: 900; letter-spacing: 3px; font-size: 20px; }
+.search { display: block; }
+.search input {
+  width: 100%; background: var(--card); border: none; border-radius: 14px;
+  padding: 13px 16px; font-size: 15px; box-shadow: 0 1px 2px rgba(0,0,0,.04);
+}
+.search input:focus { outline: 2px solid var(--ink); }
+main { padding: 0 0 16px; }
+.promo { display: flex; gap: 12px; overflow-x: auto; padding: 4px 16px 8px; scroll-snap-type: x mandatory; }
+.promo-card {
+  flex: 0 0 86%; scroll-snap-align: start; border-radius: 18px; padding: 20px; min-height: 132px;
+  display: flex; flex-direction: column; justify-content: flex-end; color: #fff;
+}
+.promo-card:nth-child(1) { background: linear-gradient(135deg, #1f2937, #4b5563); }
+.promo-card:nth-child(2) { background: linear-gradient(135deg, #1fa463, #0f7a4a); }
+.promo-card h3 { font-size: 22px; font-weight: 800; line-height: 1.1; }
+.promo-card p { font-size: 13px; opacity: .92; margin-top: 6px; }
+.cats { display: flex; gap: 14px; overflow-x: auto; padding: 14px 16px 6px; }
+.cat {
+  flex: 0 0 auto; background: none; border: none; display: flex; flex-direction: column;
+  align-items: center; gap: 6px; font-size: 12px; color: var(--ink); cursor: pointer; width: 92px;
+}
+.cat .ico {
+  width: 64px; height: 64px; border-radius: 50%; background: var(--card);
+  display: flex; align-items: center; justify-content: center; font-size: 28px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.06);
+}
+.cat.on .ico { outline: 2px solid var(--ink); }
+.sec-head { padding: 14px 16px 6px; }
+.sec-head h2 { font-size: 18px; font-weight: 800; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 6px 16px; }
+.card {
+  background: var(--card); border-radius: 16px; padding: 10px; cursor: pointer;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.pic {
+  position: relative; background: #f1f2f4; border-radius: 12px; aspect-ratio: 1 / 1;
+  display: flex; align-items: center; justify-content: center; overflow: hidden;
+}
+.thumb, .big { width: 100%; height: 100%; object-fit: contain; }
+.badge {
+  position: absolute; left: 8px; top: 8px; background: var(--green); color: #fff;
+  font-size: 11px; font-weight: 800; padding: 4px 8px; border-radius: 8px; z-index: 1;
+}
+.fav {
+  position: absolute; right: 6px; top: 6px; background: var(--card); border: none; color: var(--ink);
+  width: 32px; height: 32px; border-radius: 50%; font-size: 17px; cursor: pointer; z-index: 1;
+}
+.fav.on { color: var(--red); }
+.card .name { font-size: 14px; line-height: 1.3; min-height: 36px; padding: 0 2px; }
+.card .price { font-size: 16px; font-weight: 800; padding: 0 2px; }
+.empty { color: var(--muted); text-align: center; padding: 40px 16px; line-height: 1.6; }
+.bottom {
+  position: fixed; left: 50%; transform: translateX(-50%); bottom: 0; width: 100%; max-width: 520px;
+  background: var(--card); display: flex; justify-content: space-around;
+  padding: 8px 6px calc(8px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--line); z-index: 20;
+}
+.bottom button {
+  background: none; border: none; font-size: 11px; color: var(--muted); font-weight: 600;
+  display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 4px 8px; cursor: pointer;
+}
+.bottom button.on { color: var(--ink); }
+.ico-b { font-size: 20px; line-height: 1; }
+#cartCount:not(:empty) {
+  background: var(--red); color: #fff; border-radius: 999px; padding: 0 6px; font-size: 10px;
+}
+.modal { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: none; align-items: flex-end; justify-content: center; z-index: 50; }
+.modal.open { display: flex; }
+.sheet {
+  background: var(--card); width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto;
+  border-radius: 22px 22px 0 0; padding: 18px 18px calc(18px + env(safe-area-inset-bottom, 0px));
+}
+.sheet-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; min-height: 34px; }
+.sheet-head h3 { font-size: 18px; font-weight: 800; }
+.x { background: var(--bg); border: none; width: 34px; height: 34px; border-radius: 50%; font-size: 16px; cursor: pointer; }
+.pmedia { background: #f1f2f4; border-radius: 16px; aspect-ratio: 1 / 1; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.pname { font-size: 20px; font-weight: 800; margin-top: 14px; }
+.pprice { font-size: 22px; font-weight: 900; margin-top: 4px; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+.chip { border: 1px solid var(--line); background: var(--card); padding: 9px 14px; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 13px; }
+.chip.on { border-color: var(--ink); background: var(--ink); color: #fff; }
+.btn-main {
+  width: 100%; margin-top: 18px; background: var(--ink); color: #fff; border: none;
+  padding: 15px; border-radius: 14px; font-size: 15px; font-weight: 800; cursor: pointer;
+}
+.btn-main:disabled { opacity: .5; }
+.line { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.line .name { font-weight: 700; font-size: 14px; }
+.line small { color: var(--muted); font-size: 13px; }
+.rm { background: none; border: none; color: var(--red); font-size: 13px; cursor: pointer; font-weight: 700; }
+.total { font-size: 18px; font-weight: 900; margin-top: 12px; text-align: right; }
+.field { margin-top: 10px; }
+.field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; font-weight: 600; }
+.field input { width: 100%; background: var(--bg); border: none; border-radius: 12px; padding: 13px 14px; font-size: 15px; }
+.field input:focus { outline: 2px solid var(--ink); }
+.msg { font-size: 13px; color: var(--muted); margin-top: 10px; min-height: 18px; text-align: center; }
+.msg.err { color: var(--red); }
+.toast {
+  position: fixed; left: 50%; bottom: 96px; transform: translateX(-50%) translateY(20px);
+  background: var(--ink); color: #fff; padding: 12px 18px; border-radius: 12px; font-size: 14px;
+  opacity: 0; transition: .25s; pointer-events: none; z-index: 60; white-space: nowrap;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.cat-h { grid-column: 1 / -1; font-size: 18px; font-weight: 800; margin-top: 10px; padding: 0 2px; }
+.cat-empty { grid-column: 1 / -1; color: var(--muted); font-size: 13px; padding: 4px 2px 8px; }
+.prow { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+.prow span { color: var(--muted); }
+.prow a { color: var(--ink); font-weight: 700; text-decoration: none; }
+.seg { display: flex; background: var(--bg); border-radius: 12px; padding: 4px; margin-bottom: 12px; }
+.segbtn { flex: 1; border: none; background: none; padding: 10px; border-radius: 9px; font-weight: 700; color: var(--muted); cursor: pointer; font-size: 14px; }
+.segbtn.on { background: var(--card); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+.sub { font-size: 15px; font-weight: 800; margin: 16px 0 8px; }
+.ordercard { background: var(--bg); border-radius: 12px; padding: 12px; margin-bottom: 8px; }
+.oc-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.st { font-size: 12px; font-weight: 700; background: var(--card); padding: 4px 8px; border-radius: 8px; }
+.muted { color: var(--muted); font-size: 13px; }
+.btn-ghost { width: 100%; margin-top: 12px; background: none; border: 1px solid var(--line); padding: 12px; border-radius: 14px; font-weight: 700; cursor: pointer; color: var(--ink); }
+.cats:empty { display: none; }
+.infosec { padding: 8px 16px 16px; }
+.ibox { background: var(--card); border-radius: 16px; padding: 16px; margin-top: 12px; }
+.ibox h3 { font-size: 16px; font-weight: 800; margin-bottom: 8px; }
+.ibox p, .ibox li { font-size: 14px; line-height: 1.6; }
+.ibox ol { padding-left: 18px; }
+.ibox .faq { margin-top: 10px; }
+.ibox .faq b { display: block; font-size: 14px; }
+.ibox .faq span { font-size: 14px; color: var(--muted); line-height: 1.5; }
+.contacts div { padding: 6px 0; font-size: 14px; }
+.contacts a { color: var(--ink); font-weight: 700; text-decoration: none; }
+.foot { text-align: center; color: var(--muted); font-size: 12px; margin-top: 18px; }
+.logo img { height: 36px; width: auto; display: block; }
+.pthumbs { display: flex; gap: 8px; margin-top: 10px; overflow-x: auto; }
+.pth { width: 64px; height: 64px; flex: 0 0 auto; border-radius: 10px; border: 2px solid transparent; background: #f1f2f4; padding: 0; overflow: hidden; cursor: pointer; }
+.pth.on { border-color: var(--ink); }
+.pth img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pdesc { margin-top: 12px; font-size: 14px; line-height: 1.6; white-space: pre-line; }
+.card.poster { border-radius: 18px; padding: 12px; gap: 8px; }
+.poster-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 0 2px; }
+.poster-logo { height: 20px; width: auto; display: block; }
+.poster-phone { font-size: 11px; font-weight: 700; color: var(--muted); white-space: nowrap; }
+.pdesc-s { font-size: 12px; color: var(--muted); line-height: 1.4; min-height: 34px; padding: 0 2px; }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="logo">
+    <img id="logoImg" src="logo.png" alt="ainal" hidden onload="this.hidden=false;document.getElementById('logoText').hidden=true">
+    <span id="logoText">ainal</span>
+  </div>
+  <label class="search"><input id="q" type="search" placeholder="Тауар іздеу" autocomplete="off"></label>
+</header>
+
+<main>
+  <section class="promo">
+    <div class="promo-card"><h3>Үйге керек заттар</h3><p>Бір жерден ыңғайлы тапсырыс беріңіз</p></div>
+    <div class="promo-card"><h3>Оңай тапсырыс</h3><p>Себетке қосып, байланыс деректеріңізді жазыңыз</p></div>
+  </section>
+
+  <section class="cats" id="cats"></section>
+
+  <div class="sec-head"><h2 id="secTitle">Барлық тауарлар</h2></div>
+  <section class="grid" id="grid"></section>
+  <div class="empty" id="empty" hidden></div>
+</main>
+
+<section class="infosec" id="infoSec"></section>
+
+<nav class="bottom">
+  <button data-tab="home"><span class="ico-b">⌂</span><span>Басты</span></button>
+  <button data-tab="cat"><span class="ico-b">☰</span><span>Каталог</span></button>
+  <button data-tab="fav"><span class="ico-b">♡</span><span>Таңдаулы</span></button>
+  <button data-tab="cart"><span class="ico-b">🛒</span><span>Себет <span id="cartCount"></span></span></button>
+  <button data-tab="admin"><span class="ico-b">👤</span><span>Профиль</span></button>
+</nav>
+
+<div class="modal" id="productModal">
+  <div class="sheet">
+    <div class="sheet-head"><span></span><button class="x" data-close="productModal">✕</button></div>
+    <div class="pmedia" id="pmedia"></div>
+    <div class="pthumbs" id="pthumbs" hidden></div>
+    <div class="pname" id="pname"></div>
+    <div class="pprice" id="pprice"></div>
+    <div class="pdesc" id="pdesc" hidden></div>
+    <div class="chips" id="psizes"></div>
+    <button class="btn-main" id="addBtn">Себетке қосу</button>
+    <button class="btn-ghost" id="shareBtn">Бөлісу</button>
+  </div>
+</div>
+
+<div class="modal" id="cartModal">
+  <div class="sheet">
+    <div class="sheet-head"><h3>Себет</h3><button class="x" data-close="cartModal">✕</button></div>
+    <div id="cartItems"></div>
+    <div class="total" id="cartTotal"></div>
+    <div id="orderForm">
+      <div class="field"><label>Аты-жөні</label><input id="oName" autocomplete="name"></div>
+      <div class="field"><label>Телефон</label><input id="oPhone" type="tel" placeholder="+7 777 000 00 00"></div>
+      <div class="field"><label>Мекенжай</label><input id="oAddr"></div>
+      <button class="btn-main" id="sendBtn">Тапсырыс беру</button>
+      <div class="msg" id="oMsg"></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="profileModal">
+  <div class="sheet">
+    <div class="sheet-head"><h3 id="pTitle">Профиль</h3><button class="x" data-close="profileModal">✕</button></div>
+
+    <div id="authBox">
+      <div class="seg">
+        <button class="segbtn on" id="tabLogin">Кіру</button>
+        <button class="segbtn" id="tabReg">Тіркелу</button>
+      </div>
+      <div id="regFields" hidden>
+        <div class="field"><label>Аты-жөні</label><input id="rName" autocomplete="name"></div>
+      </div>
+      <div class="field"><label>Email</label><input id="aEmail" type="email" autocomplete="email"></div>
+      <div class="field"><label>Құпия сөз (кемі 6 таңба)</label><input id="aPass" type="password" autocomplete="current-password"></div>
+      <button class="btn-main" id="authBtn">Кіру</button>
+      <div class="msg" id="authMsg"></div>
+    </div>
+
+    <div id="userBox" hidden>
+      <div class="prow"><span>Аты</span><b id="uName"></b></div>
+      <div class="prow"><span>Email</span><b id="uEmail"></b></div>
+      <div class="sub">Менің тапсырыстарым</div>
+      <div id="myOrders"></div>
+      <button class="btn-main" id="logoutBtn">Шығу</button>
+    </div>
+
+    <div class="prow"><span>WhatsApp</span><a href="https://wa.me/77478630116" target="_blank" rel="noopener">+7 747 863 01 16</a></div>
+    <div class="prow"><span>Telegram тобы</span><a href="https://t.me/+T-O2icC0wuA1YWI6" target="_blank" rel="noopener">Тапсырыс тобы</a></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.js"></script>
+<script>
+const SUPABASE_URL = "https://qxyrgrxzxwkdaxfvwuuk.supabase.co";
+const SUPABASE_KEY = "sb_publishable_BzK_WKib3Y2eZrNlykC_KA_DVXyEXQU";
+const sb = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+
+const CATS = [
+  { key: "all", name: "Барлығы", icon: "🛒" },
+  { key: "plumbing", name: "Сантехника", icon: "🚿" },
+  { key: "electrical", name: "Электротауар", icon: "💡" }
+];
+
+let products = [];
+let cat = "all";
+let tab = "home";
+let query = "";
+let cart = [];
+let fav = loadFav();
+let openId = null;
+let selSize = "";
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const fmt = n => Number(n || 0).toLocaleString("kk-KZ") + " ₸";
+
+function loadFav() {
+  try { return new Set(JSON.parse(localStorage.getItem("ainal_fav") || "[]")); } catch (e) { return new Set(); }
+}
+function saveFav() {
+  try { localStorage.setItem("ainal_fav", JSON.stringify([...fav])); } catch (e) {}
+}
+function toast(msg) {
+  const t = $("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => t.classList.remove("show"), 2200);
+}
+function isNew(p) {
+  return p.created_at && (Date.now() - new Date(p.created_at).getTime()) < 14 * 86400000;
+}
+function isVideo(url) {
+  return /\.(mp4|webm)(\?|$)/i.test(url || "");
+}
+function placeholder(p) {
+  const c = /^#[0-9a-f]{6}$/i.test(p.color || "") ? p.color : "#9aa0a6";
+  const svg = "<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'>" +
+    "<rect width='300' height='300' fill='#f1f2f4'/>" +
+    "<rect x='80' y='100' width='140' height='110' rx='18' fill='" + c + "' opacity='.85'/></svg>";
+  return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+}
+function mediaHtml(p, cls) {
+  if (p.image_url && isVideo(p.image_url)) {
+    return '<video class="' + cls + '" src="' + esc(p.image_url) + '" muted autoplay loop playsinline></video>';
+  }
+  const src = p.image_url || placeholder(p);
+  return '<img class="' + cls + '" src="' + esc(src) + '" alt="' + esc(p.name) + '" loading="lazy">';
+}
+
+async function loadProducts() {
+  if (!sb) { toast("Дерекқор қолжетімсіз"); return; }
+  const { data, error } = await sb.from("products").select("*").eq("is_active", true).order("created_at", { ascending: true });
+  if (error) { toast("Тауарларды жүктеу қатесі"); return; }
+  products = (data || []).map(p => {
+    const imgs = (p.images && p.images.length) ? p.images : (p.image_url ? [p.image_url] : []);
+    return { ...p, sizes: p.sizes || [], category: p.category || "unisex", images: imgs, image_url: imgs[0] || null };
+  });
+  render();
+  openFromHash();
+}
+
+function visible() {
+  return products.filter(p =>
+    (cat === "all" || p.category === cat) &&
+    (!query || p.name.toLowerCase().includes(query)) &&
+    (tab !== "fav" || fav.has(p.id))
+  );
+}
+
+function cardHtml(p) {
+  const badge = isNew(p) ? '<span class="badge">ЖАҢА</span>' : "";
+  const isFav = fav.has(p.id);
+  const desc = (p.description || "").trim();
+  return '<article class="card poster" data-id="' + p.id + '">' +
+    '<div class="poster-top">' +
+      '<img class="poster-logo" src="logo.png" alt="ainal">' +
+      '<span class="poster-phone">' + esc(SHOP.phone) + '</span>' +
+    '</div>' +
+    '<div class="pic">' + badge +
+      '<button class="fav' + (isFav ? " on" : "") + '" data-fav="' + p.id + '" aria-label="Таңдаулы">' + (isFav ? "♥" : "♡") + '</button>' +
+      mediaHtml(p, "thumb") +
+    '</div>' +
+    '<div class="name">' + esc(p.name) + '</div>' +
+    (desc ? '<div class="pdesc-s">' + esc(desc) + '</div>' : '') +
+    '<div class="price">' + fmt(p.price) + '</div>' +
+    '</article>';
+}
+
+function render() {
+  if (tab === "cat") renderCats(); else $("cats").innerHTML = "";
+  const list = visible();
+  $("secTitle").textContent = tab === "cat" ? "Каталог" : tab === "fav" ? "Таңдаулылар"
+    : (cat === "all" ? "Барлық тауарлар" : CATS.find(c => c.key === cat).name);
+  if (tab === "cat") {
+    const sections = CATS.filter(c => c.key !== "all").concat([{ key: "unisex", name: "Басқа" }]);
+    $("grid").innerHTML = sections.map(c => {
+      const items = list.filter(p => p.category === c.key);
+      if (!items.length && c.key === "unisex") return "";
+      return '<h2 class="cat-h">' + esc(c.name) + '</h2>' +
+        (items.length ? items.map(cardHtml).join("") : '<div class="cat-empty">Тауар жоқ</div>');
+    }).join("");
+  } else {
+    $("grid").innerHTML = list.map(cardHtml).join("");
+  }
+  $("empty").hidden = list.length > 0;
+  $("empty").textContent = products.length === 0 ? "Әзірге тауар жоқ."
+    : (tab === "fav" ? "Таңдаулы тауар жоқ." : "Тауар табылмады.");
+  updateTabs();
+  updateCartCount();
+}
+
+function renderCats() {
+  $("cats").innerHTML = CATS.map(c =>
+    '<button class="cat' + (cat === c.key ? " on" : "") + '" data-cat="' + c.key + '">' +
+    '<span class="ico">' + c.icon + '</span><span>' + esc(c.name) + '</span></button>'
+  ).join("");
+}
+
+function updateTabs() {
+  document.querySelectorAll(".bottom button").forEach(b => {
+    const t = b.dataset.tab;
+    b.classList.toggle("on", (t === "home" && tab === "home" && cat === "all") || (t === "fav" && tab === "fav") || (t === "cat" && tab === "cat"));
+  });
+}
+
+function updateCartCount() {
+  $("cartCount").textContent = cart.length ? cart.length : "";
+}
+
+function openProduct(id) {
+  const p = products.find(x => x.id === id);
+  if (!p) return;
+  openId = id;
+  selSize = p.sizes.length ? p.sizes[0] : "";
+  showGallery(p, 0);
+  $("pname").textContent = p.name;
+  $("pprice").textContent = fmt(p.price);
+  $("pdesc").textContent = p.description || "";
+  $("pdesc").hidden = !p.description;
+  renderPsizes();
+  $("productModal").classList.add("open");
+}
+
+function showGallery(p, i) {
+  const imgs = p.images && p.images.length ? p.images : (p.image_url ? [p.image_url] : []);
+  const cur = imgs[i];
+  if (cur && !isVideo(cur)) {
+    $("pmedia").innerHTML = '<img class="big" src="' + esc(cur) + '" alt="' + esc(p.name) + '">';
+  } else if (cur) {
+    $("pmedia").innerHTML = '<video class="big" src="' + esc(cur) + '" controls playsinline></video>';
+  } else {
+    $("pmedia").innerHTML = mediaHtml(p, "big");
+  }
+  $("pthumbs").hidden = imgs.length < 2;
+  $("pthumbs").innerHTML = imgs.map((u, k) =>
+    '<button class="pth' + (k === i ? " on" : "") + '" data-th="' + k + '">' +
+    (isVideo(u) ? '<span style="font-size:22px">▶</span>' : '<img src="' + esc(u) + '" alt="">') + '</button>'
+  ).join("");
+}
+
+function openFromHash() {
+  const m = location.hash.match(/^#p=(.+)$/);
+  if (m && products.some(p => p.id === m[1])) openProduct(m[1]);
+}
+
+function renderPsizes() {
+  const p = products.find(x => x.id === openId);
+  if (!p) return;
+  $("psizes").hidden = !p.sizes.length;
+  $("psizes").innerHTML = p.sizes.map(s =>
+    '<button class="chip' + (s === selSize ? " on" : "") + '" data-size="' + esc(s) + '">' + esc(s) + '</button>'
+  ).join("");
+}
+
+function addToCart() {
+  const p = products.find(x => x.id === openId);
+  if (!p) return;
+  cart.push({ id: p.id, name: p.name, price: p.price, size: p.sizes.length ? selSize : "" });
+  $("productModal").classList.remove("open");
+  updateCartCount();
+  toast("Себетке қосылды");
+}
+
+function openCart() {
+  renderCart();
+  setOrderMsg("");
+  $("cartModal").classList.add("open");
+}
+
+function renderCart() {
+  if (!cart.length) {
+    $("cartItems").innerHTML = '<div class="empty">Себет бос</div>';
+    $("cartTotal").textContent = "";
+    $("orderForm").hidden = true;
+    return;
+  }
+  $("orderForm").hidden = false;
+  $("cartItems").innerHTML = cart.map((c, i) =>
+    '<div class="line"><div><div class="name">' + esc(c.name) + '</div><small>' +
+    (c.size ? esc(c.size) + " · " : "") + fmt(c.price) + '</small></div>' +
+    '<button class="rm" data-rm="' + i + '">Өшіру</button></div>'
+  ).join("");
+  $("cartTotal").textContent = "Жалпы: " + fmt(cart.reduce((s, c) => s + c.price, 0));
+}
+
+function setOrderMsg(text, isErr) {
+  $("oMsg").textContent = text;
+  $("oMsg").className = "msg" + (isErr ? " err" : "");
+}
+
+function buildOrderText(name, phone, addr) {
+  let total = 0;
+  const lines = cart.map((c, i) => {
+    total += c.price;
+    return (i + 1) + ". " + c.name + (c.size ? " (" + c.size + ")" : "") + " — " + fmt(c.price);
+  });
+  return "Жаңа тапсырыс — ainal\n\nАты: " + name + "\nТелефон: " + phone + "\nМекенжай: " + addr +
+    "\n\nТауарлар:\n" + lines.join("\n") + "\n\nЖалпы: " + fmt(total);
+}
+
+async function saveOrderToDb(name, phone, addr) {
+  if (!sb) return;
+  try {
+    const items = cart.map(c => ({ name: c.name, size: c.size, price: c.price }));
+    const total = items.reduce((s, i) => s + i.price, 0);
+    const row = { customer_name: name, phone: phone, address: addr, items: items, total: total };
+    let r = await sb.from("orders").insert({ ...row, user_id: user ? user.id : null });
+    if (r.error) r = await sb.from("orders").insert(row);
+  } catch (e) {
+    console.warn("Тапсырысты дерекқорға сақтау мүмкін болмады", e);
+  }
+}
+
+async function sendOrder() {
+  const name = $("oName").value.trim();
+  const phone = $("oPhone").value.trim();
+  const addr = $("oAddr").value.trim();
+  if (!name || !phone || !addr) return setOrderMsg("Аты, телефоны және мекенжайы толтырылсын", true);
+  const text = buildOrderText(name, phone, addr);
+  $("sendBtn").disabled = true;
+  setOrderMsg("Жіберілуде...");
+  await saveOrderToDb(name, phone, addr);
+  try {
+    const res = await fetch("/.netlify/functions/order", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: text })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.error || "қате");
+    cart = [];
+    updateCartCount();
+    renderCart();
+    setOrderMsg("Рахмет! Тапсырыс қабылданды, жақын арада хабарласамыз.");
+    toast("Тапсырыс қабылданды");
+  } catch (e) {
+    setOrderMsg("Жіберу мүмкін болмады (" + e.message + "). Қайтадан көріңіз.", true);
+  } finally {
+    $("sendBtn").disabled = false;
+  }
+}
+
+/* ---------- Оқиғалар ---------- */
+
+$("grid").addEventListener("click", e => {
+  const f = e.target.closest("[data-fav]");
+  if (f) {
+    const id = f.dataset.fav;
+    if (fav.has(id)) fav.delete(id); else fav.add(id);
+    saveFav();
+    render();
+    return;
+  }
+  const c = e.target.closest(".card");
+  if (c) openProduct(c.dataset.id);
+});
+
+$("cats").addEventListener("click", e => {
+  const b = e.target.closest("[data-cat]");
+  if (!b) return;
+  cat = b.dataset.cat;
+  tab = "home";
+  render();
+  $("secTitle").scrollIntoView({ behavior: "smooth" });
+});
+
+$("q").addEventListener("input", e => {
+  query = e.target.value.trim().toLowerCase();
+  render();
+});
+
+$("psizes").addEventListener("click", e => {
+  const b = e.target.closest("[data-size]");
+  if (!b) return;
+  selSize = b.dataset.size;
+  renderPsizes();
+});
+
+$("addBtn").onclick = addToCart;
+
+$("pthumbs").addEventListener("click", e => {
+  const b = e.target.closest("[data-th]");
+  if (!b) return;
+  const p = products.find(x => x.id === openId);
+  if (p) showGallery(p, Number(b.dataset.th));
+});
+
+$("shareBtn").onclick = async () => {
+  const p = products.find(x => x.id === openId);
+  if (!p) return;
+  const url = location.origin + location.pathname + "#p=" + p.id;
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: p.name, text: p.name + " — " + fmt(p.price) + " · ainal", url: url });
+      return;
+    } catch (e) {
+      if (e && e.name === "AbortError") return;
+    }
+  }
+  try {
+    await navigator.clipboard.writeText(url);
+    toast("Сілтеме көшірілді");
+  } catch (e) {
+    toast("Сілтеме: " + url);
+  }
+};
+
+$("cartItems").addEventListener("click", e => {
+  const b = e.target.closest("[data-rm]");
+  if (!b) return;
+  cart.splice(Number(b.dataset.rm), 1);
+  updateCartCount();
+  renderCart();
+});
+
+$("sendBtn").onclick = sendOrder;
+
+document.querySelectorAll("[data-close]").forEach(b => {
+  b.onclick = () => $(b.dataset.close).classList.remove("open");
+});
+document.querySelectorAll(".modal").forEach(m => {
+  m.addEventListener("click", e => { if (e.target === m) m.classList.remove("open"); });
+});
+
+document.querySelectorAll(".bottom button").forEach(b => {
+  b.onclick = () => {
+    const t = b.dataset.tab;
+    if (t === "admin") { $("profileModal").classList.add("open"); return; }
+    if (t === "cart") { openCart(); return; }
+    if (t === "cat") {
+      tab = "cat";
+      cat = "all";
+      render();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+    tab = t === "fav" ? "fav" : "home";
+    if (t === "home") cat = "all";
+    render();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+});
+
+/* Дүкен мәліметтері: бос қалған жолдар бетте көрінбейді. Өзгерту үшін осы жерді толтырыңыз. */
+const SHOP = {
+  about: "ainal — сантехника және электротауарлар дүкені. Керекті заттарды бір жерден тапсырыс беріңіз.",
+  phone: "+7 747 863 01 16",
+  whatsapp: "https://wa.me/77478630116",
+  telegram: "https://t.me/+T-O2icC0wuA1YWI6",
+  hours: "",
+  address: "",
+  delivery: "",
+  payment: "",
+  returns: ""
+};
+
+function infoBlock(title, html) {
+  return '<div class="ibox"><h3>' + title + '</h3>' + html + '</div>';
+}
+
+function renderInfo() {
+  const blocks = [];
+  if (SHOP.about) blocks.push(infoBlock("Біз туралы", "<p>" + esc(SHOP.about) + "</p>"));
+  blocks.push(infoBlock("Тапсырыс қалай жасалады",
+    "<ol><li>Тауарды себетке қосыңыз</li><li>Аты-жөніңіз, телефоныңыз және мекенжайыңызды жазыңыз</li><li>«Тапсырыс беру» басыңыз, біз хабарласамыз</li></ol>"));
+  if (SHOP.delivery) blocks.push(infoBlock("Жеткізу", "<p>" + esc(SHOP.delivery) + "</p>"));
+  if (SHOP.payment) blocks.push(infoBlock("Төлем", "<p>" + esc(SHOP.payment) + "</p>"));
+  if (SHOP.returns) blocks.push(infoBlock("Қайтару және кепілдік", "<p>" + esc(SHOP.returns) + "</p>"));
+  blocks.push(infoBlock("Жиі қойылатын сұрақтар",
+    '<div class="faq"><b>Тапсырысты өзгертуге бола ма?</b><span>Иә, WhatsApp немесе Telegram арқылы хабарласыңыз.</span></div>' +
+    '<div class="faq"><b>Тапсырыс қабылданғанын қалай білемін?</b><span>Тапсырыс қабылданған соң сайтта хабар шығады, біз сізбен байланысамыз.</span></div>'));
+
+  const contacts = [];
+  if (SHOP.phone) contacts.push('<a href="tel:' + esc(SHOP.phone.replace(/\s/g, "")) + '">' + esc(SHOP.phone) + '</a>');
+  if (SHOP.whatsapp) contacts.push('<a href="' + esc(SHOP.whatsapp) + '" target="_blank" rel="noopener">WhatsApp</a>');
+  if (SHOP.telegram) contacts.push('<a href="' + esc(SHOP.telegram) + '" target="_blank" rel="noopener">Telegram тобы</a>');
+  if (SHOP.hours) contacts.push(esc(SHOP.hours));
+  if (SHOP.address) contacts.push(esc(SHOP.address));
+  blocks.push(infoBlock("Байланыс", '<div class="contacts">' + contacts.map(c => "<div>" + c + "</div>").join("") + "</div>"));
+
+  $("infoSec").innerHTML = blocks.join("") + '<div class="foot">© ainal</div>';
+}
+
+let user = null;
+let authMode = "login";
+
+function setAuthMsg(text, err) {
+  $("authMsg").textContent = text;
+  $("authMsg").className = "msg" + (err ? " err" : "");
+}
+
+function errText(e) {
+  const m = (e.message || "").toLowerCase();
+  if (m.includes("invalid login")) return "Email немесе құпия сөз дұрыс емес";
+  if (m.includes("already registered")) return "Бұл email тіркелген. Кіріп көріңіз";
+  if (m.includes("email not confirmed")) return "Поштаңызды растаңыз, содан кейін кіріңіз";
+  return "Қате: " + e.message;
+}
+
+function setAuthMode(m) {
+  authMode = m;
+  $("tabLogin").classList.toggle("on", m === "login");
+  $("tabReg").classList.toggle("on", m === "reg");
+  $("regFields").hidden = m !== "reg";
+  $("authBtn").textContent = m === "reg" ? "Тіркелу" : "Кіру";
+  setAuthMsg("");
+}
+
+function setUser(u) {
+  user = u;
+  const logged = !!u;
+  $("authBox").hidden = logged;
+  $("userBox").hidden = !logged;
+  $("pTitle").textContent = logged ? "Менің аккаунтым" : "Профиль";
+  if (logged) {
+    const name = (u.user_metadata && u.user_metadata.name) || "";
+    $("uName").textContent = name || "—";
+    $("uEmail").textContent = u.email || "";
+    if (name && !$("oName").value) $("oName").value = name;
+    loadMyOrders();
+  } else {
+    $("myOrders").innerHTML = "";
+  }
+}
+
+async function doAuth() {
+  const email = $("aEmail").value.trim();
+  const pass = $("aPass").value;
+  if (!email || !pass) return setAuthMsg("Email және құпия сөзді жазыңыз", true);
+  if (pass.length < 6) return setAuthMsg("Құпия сөз кемі 6 таңбадан тұруы керек", true);
+  if (!sb) return setAuthMsg("Қосылым жоқ", true);
+
+  $("authBtn").disabled = true;
+  try {
+    if (authMode === "reg") {
+      const name = $("rName").value.trim();
+      if (!name) return setAuthMsg("Аты-жөніңізді жазыңыз", true);
+      const { data, error } = await sb.auth.signUp({ email: email, password: pass, options: { data: { name: name } } });
+      if (error) return setAuthMsg(errText(error), true);
+      if (!data.session) {
+        return setAuthMsg("Поштаңызға растау хаты жіберілді. Растаңыз да, кіріңіз.");
+      }
+      setUser(data.session.user);
+      toast("Тіркелдіңіз");
+    } else {
+      const { data, error } = await sb.auth.signInWithPassword({ email: email, password: pass });
+      if (error) return setAuthMsg(errText(error), true);
+      setUser(data.user);
+      toast("Қош келдіңіз");
+    }
+    $("aPass").value = "";
+  } finally {
+    $("authBtn").disabled = false;
+  }
+}
+
+async function loadMyOrders() {
+  if (!sb || !user) return;
+  const box = $("myOrders");
+  const { data, error } = await sb.from("orders").select("*").order("created_at", { ascending: false }).limit(50);
+  if (error) { box.textContent = "Тапсырыстарды жүктеу мүмкін болмады"; return; }
+  if (!data || !data.length) { box.innerHTML = '<div class="muted">Тапсырыс әлі жоқ</div>'; return; }
+  const txt = { new: "Жаңа", accepted: "Қабылданды", shipped: "Жіберілді", delivered: "Жеткізілді", cancelled: "Бас тартылды" };
+  box.innerHTML = data.map(o =>
+    '<div class="ordercard"><div class="oc-top"><b>' + fmt(o.total) + '</b><span class="st">' + (txt[o.status] || esc(o.status)) + '</span></div>' +
+    '<div class="muted">' + esc((o.items || []).map(i => i.name).join(", ")) + '</div>' +
+    '<div class="muted">' + new Date(o.created_at).toLocaleDateString("kk-KZ") + '</div></div>'
+  ).join("");
+}
+
+$("tabLogin").onclick = () => setAuthMode("login");
+$("tabReg").onclick = () => setAuthMode("reg");
+$("authBtn").onclick = doAuth;
+$("logoutBtn").onclick = async () => {
+  if (sb) await sb.auth.signOut();
+  setUser(null);
+  toast("Шықтыңыз");
+};
+
+async function initAuth() {
+  if (!sb) return;
+  const { data } = await sb.auth.getSession();
+  setUser(data.session ? data.session.user : null);
+  sb.auth.onAuthStateChange((_event, session) => setUser(session ? session.user : null));
+}
+
+renderInfo();
+render();
+updateCartCount();
+setAuthMode("login");
+loadProducts();
+initAuth();
+</script>
+</body>
+</html>
