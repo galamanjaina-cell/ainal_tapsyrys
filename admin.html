@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>АЙНАЛ — басқару</title>
+<title>ainal — басқару</title>
 <style>
 :root { --bg:#0d0d0d; --panel:#161616; --line:#262626; --text:#f2f2f2; --muted:#8a8a8a; --accent:#ff5a1f; --danger:#e5484d; color-scheme:dark; }
 * { box-sizing:border-box; }
@@ -27,7 +27,7 @@ button.danger:hover { border-color:var(--danger); color:var(--danger); }
 </head>
 <body>
 
-<h1>АЙНАЛ — басқару</h1>
+<h1>ainal — басқару</h1>
 
 <div id="loginBox" class="box hidden">
   <label>Email</label>
@@ -51,15 +51,14 @@ button.danger:hover { border-color:var(--danger); color:var(--danger); }
     <input id="fName">
     <label>Санат</label>
     <select id="fCat" style="width:100%;background:#f6f6f6;border:1px solid transparent;padding:11px 12px;font-size:14px;border-radius:10px">
-      <option value="unisex">Барлығына</option>
-      <option value="men">Ерлер</option>
-      <option value="women">Әйелдер</option>
-      <option value="kids">Балалар</option>
+      <option value="unisex">Басқа</option>
+      <option value="plumbing">Сантехника</option>
+      <option value="electrical">Электротауар</option>
     </select>
     <label>Бағасы (₸)</label>
     <input id="fPrice" type="number" min="0">
     <label>Өлшемдер (үтірмен)</label>
-    <input id="fSizes" placeholder="S, M, L, XL">
+    <input id="fSizes" placeholder="Керек болмаса бос қалдырыңыз">
     <label>Түсі (HEX)</label>
     <input id="fColor" placeholder="#555555">
     <label>Сурет немесе видео файлы (jpg, png, webp, mp4, webm)</label>
